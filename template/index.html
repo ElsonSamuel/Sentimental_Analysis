@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #0a192f;
+            color: #fff;
+        }
+        h1 {
+            text-align: center;
+            color: #fff;
+        }
+        .sparkle {
+            color: #ffd700;
+        }
+        .description {
+            text-align: center;
+            color: #8892b0;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #172a45;
+            color: #fff;
+            border: 1px solid #293d5a;
+        }
+        button {
+            display: block;
+            width: 200px;
+            margin: 20px auto;
+            padding: 10px;
+            background-color: #64ffda;
+            color: #0a192f;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #4cccb0;
+        }
+        #results {
+            margin-top: 20px;
+        }
+        .result-item {
+            background-color: #172a45;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #64ffda;
+        }
+        .positive {
+            border-left-color: #64ffda;
+        }
+        .negative {
+            border-left-color: #ff6464;
+        }
+        .neutral {
+            border-left-color: #ffd700;
+        }
+        /* Custom Alert Styles */
+        .custom-alert {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ff6464;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: none;
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                top: -100px;
+                opacity: 0;
+            }
+            to {
+                top: 20px;
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1><span class="sparkle">✨</span> Sentiment Analysis</h1>
+    <p class="description">Type in a comment and see if it expresses positivity or negativity!</p>
+    
+    <!-- Add the custom alert div -->
+    <div id="negativeAlert" class="custom-alert">
+        ⚠️ Warning: Negative content detected!
+    </div>
+    
+    <textarea id="comment" placeholder="Enter your comment here..."></textarea>
+    <button onclick="analyzeComment()">Post Comment</button>
+    
+    <div id="results"></div>
+
+    <script>
+        function showAlert() {
+            const alert = document.getElementById('negativeAlert');
+            alert.style.display = 'block';
+            
+            // Hide the alert after 3 seconds
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 3000);
+        }
+
+        function analyzeComment() {
+            const comment = document.getElementById('comment').value;
+            if (!comment) return;
+
+            fetch('/process_comment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ comment: comment })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultsDiv = document.getElementById('results');
+                const resultItem = document.createElement('div');
+                
+                // Determine the sentiment class
+                let sentimentClass = 'neutral';
+                if (data.sentiment.includes('Positive')) {
+                    sentimentClass = 'positive';
+                } else if (data.sentiment.includes('Negative')) {
+                    sentimentClass = 'negative';
+                    // Show alert for negative comments
+                    showAlert();
+                }
+                
+                resultItem.className = `result-item ${sentimentClass}`;
+                resultItem.innerHTML = `
+                    <div><strong>Comment:</strong> ${data.comment}</div>
+                    <div><strong>Sentiment:</strong> ${data.sentiment}</div>
+                `;
+                
+                resultsDiv.insertBefore(resultItem, resultsDiv.firstChild);
+                document.getElementById('comment').value = '';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while analyzing the comment.');
+            });
+        }
+    </script>
+</body>
+</html>
